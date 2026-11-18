@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cringiometro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1b1b1b; --card:#ffffff; --ink:#1a1a1a; --mute:#a6a6a6;
+    --soft:#f3f2ef; --yellow:#ffdd57; --r:22px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:"Inter Tight",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  html,body{height:100%}
+  body{display:flex;justify-content:center;align-items:center;min-height:100dvh}
+  .card{width:100%;height:100dvh;background:var(--card);padding:calc(28px + env(safe-area-inset-top)) 22px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;overflow-y:auto;scrollbar-width:none}
+  .card::-webkit-scrollbar{display:none}
+  @media (min-width:600px){
+    body{padding:24px}
+    .card{width:390px;height:min(844px,calc(100dvh - 48px));border-radius:48px;box-shadow:0 0 0 10px #0d0d0d,0 30px 80px rgba(0,0,0,.5)}
+  }
+  header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+  h1{font-weight:500;font-size:20px;letter-spacing:-.02em;line-height:1.15}
+  h1 span{display:block;color:var(--mute)}
+  .mark{width:52px;height:52px;flex:none;overflow:visible;margin-top:-4px}
+    .face .w{fill:#fff;stroke:var(--ink);stroke-width:1.5}
+  .face .k{fill:var(--ink)}
+  .face .mouth{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .face .k{stroke:none}
+  .face .m{opacity:0;transition:opacity .2s}
+  .face[data-mood=neutral] .m-neutral,.face[data-mood=low] .m-low,.face[data-mood=mid] .m-mid,.face[data-mood=high] .m-high{opacity:1}
+  .face .eye,.face .pupils{transform-box:fill-box;transform-origin:center}
+  .face .eye{animation:blink 4.2s infinite}
+  .face.thinking .eye{animation-duration:1.4s}
+  .face.thinking .pupils{animation:look 1.8s ease-in-out infinite}
+  .face.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes blink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.08)}}
+  @keyframes look{0%,100%{transform:translateX(-3px)}50%{transform:translateX(3.5px)}}
+  @keyframes pop{0%{transform:scale(.8)}100%{transform:scale(1)}}
+
+  .attach{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .add{border:0;background:var(--soft);border-radius:999px;padding:9px 14px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+  .thumb{position:relative;width:52px;height:52px;border-radius:12px;overflow:hidden;background:var(--soft)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb button{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:11px;line-height:18px;cursor:pointer;padding:0}
+
+  textarea{width:100%;min-height:150px;resize:vertical;border:0;outline:0;background:var(--soft);border-radius:var(--r);padding:18px;font:inherit;font-size:15px;line-height:1.45;color:var(--ink)}
+  textarea::placeholder{color:var(--mute)}
+  button.go{border:0;background:var(--ink);color:#fff;font:inherit;font-size:15px;font-weight:500;border-radius:999px;padding:15px;cursor:pointer;transition:opacity .2s}
+  button.go:disabled{opacity:.35;cursor:default}
+
+  .result{display:none;flex-direction:column;gap:12px;margin-top:22px}
+  .result.on{display:flex}
+  .big{display:flex;justify-content:space-between;align-items:flex-start}
+  .num{font-size:clamp(96px,30vw,150px);font-weight:400;letter-spacing:-.06em;line-height:.9}
+  .q{display:flex;align-items:center;gap:10px;border:0;background:none;font:inherit;font-size:14px;color:var(--ink);cursor:pointer;padding:6px 2px;align-self:flex-start}
+  .q i{font-style:normal;width:26px;height:26px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:500;font-size:13px;transition:background .2s,color .2s}
+  .q.on i{background:var(--ink);color:#fff}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .chip{background:var(--soft);border-radius:8px;padding:6px 9px;font-size:12px}
+
+  .meter{position:relative;height:120px;background:var(--soft);border-radius:var(--r);overflow:hidden}
+  .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--yellow);transition:width 1s cubic-bezier(.2,.8,.2,1)}
+  .meter .lbl{position:absolute;left:18px;top:16px;font-size:15px}
+  .meter .val{position:absolute;left:18px;bottom:14px;font-size:30px;letter-spacing:-.03em}
+  .meter .tag{position:absolute;right:12px;top:12px;background:#fff;border-radius:7px;padding:4px 7px;font-size:11px}
+
+  .why{display:none;flex-direction:column;gap:8px}
+  .why.on{display:flex}
+  .reason{background:var(--soft);border-radius:var(--r);padding:16px 18px}
+  .reason b{font-weight:500;font-size:15px;display:block;margin-bottom:4px}
+  .reason p{font-size:14px;line-height:1.45;color:#555}
+
+  .load{display:none;color:var(--mute);font-size:14px;text-align:center;padding:8px 0}
+  .load.on{display:block}
+  .err{color:#b44;font-size:13px;text-align:center}
+  footer{font-size:11px;color:var(--mute);text-align:center;margin-top:auto;padding-top:14px}
+</style>
+</head>
+<body>
+<main class="card">
+  <header>
+    <h1>Cringiometro.<span>Quanto è cringe il tuo post?</span></h1>
+    <svg class="mark face" id="face" data-mood="neutral" viewBox="0 0 52 52" aria-hidden="true">
+      <defs>
+        <clipPath id="cl"><circle cx="17" cy="23" r="6.5"/></clipPath>
+        <clipPath id="cr"><circle cx="35" cy="23" r="6.5"/></clipPath>
+        <clipPath id="hl"><path d="M10.5 21 A6.5 6.5 0 0 0 23.5 21 Z"/></clipPath>
+        <clipPath id="ql"><path d="M10.6 24.5 A6.5 6.5 0 0 0 23.4 24.5 Z"/></clipPath>
+        <clipPath id="qr"><path d="M28.6 24.5 A6.5 6.5 0 0 0 41.4 24.5 Z"/></clipPath>
+        <clipPath id="hr"><path d="M28.5 21 A6.5 6.5 0 0 0 41.5 21 Z"/></clipPath>
+      </defs>
+      <!-- default: occhi a mezz'asta, bocca piatta -->
+      <g class="m m-neutral">
+        <g class="eye"><path class="w" d="M10.5 21 A6.5 6.5 0 0 0 23.5 21 Z"/><path class="w" d="M28.5 21 A6.5 6.5 0 0 0 41.5 21 Z"/>
+          <g clip-path="url(#hl)"><g class="pp" data-k="3"><circle class="k pupils" cx="15.5" cy="21" r="4.5"/></g></g><g clip-path="url(#hr)"><g class="pp" data-k="3"><circle class="k pupils" cx="33.5" cy="21" r="4.5"/></g></g></g>
+        <path class="mouth" d="M23.5 33 H28.5"/>
+      </g>
+      <!-- 15-39%: ti guarda male -->
+      <g class="m m-mid">
+        <g class="eye"><path class="w" d="M10.5 21 A6.5 6.5 0 0 0 23.5 21 Z"/><path class="w" d="M28.5 21 A6.5 6.5 0 0 0 41.5 21 Z"/>
+          <circle class="k" cx="18" cy="22" r="4.5" clip-path="url(#hl)"/><circle class="k" cx="34" cy="22" r="4.5" clip-path="url(#hr)"/></g>
+        <path class="mouth" d="M23 34 Q26 32 29 34"/>
+      </g>
+      <!-- non cringe: occhi normali, sorriso -->
+      <g class="m m-low">
+        <g class="eye"><circle class="w" cx="17" cy="23" r="6.5"/><circle class="w" cx="35" cy="23" r="6.5"/>
+          <g clip-path="url(#cl)"><g class="pp" data-k="3"><circle class="k" cx="17" cy="23" r="4.5"/></g></g><g clip-path="url(#cr)"><g class="pp" data-k="3"><circle class="k" cx="35" cy="23" r="4.5"/></g></g></g>
+        <path class="mouth" d="M22.5 33 Q26 37 29.5 33"/>
+      </g>
+      <!-- cringe: occhi chiusi, bocca aperta -->
+      <g class="m m-high">
+        <g class="eye"><path class="w" d="M10.6 24.5 A6.5 6.5 0 0 0 23.4 24.5 Z"/><path class="w" d="M28.6 24.5 A6.5 6.5 0 0 0 41.4 24.5 Z"/>
+          <g clip-path="url(#ql)"><g class="pp" data-k="2.5"><circle class="k" cx="17" cy="25" r="4"/></g></g><g clip-path="url(#qr)"><g class="pp" data-k="2.5"><circle class="k" cx="35" cy="25" r="4"/></g></g></g>
+        <path class="k" d="M22.6 36.5 Q22.6 31.2 26 31.2 Q29.4 31.2 29.4 36.5 Q29.4 38.2 26 38.2 Q22.6 38.2 22.6 36.5 Z"/>
+      </g>
+    </svg>
+  </header>
+
+  <textarea id="post" placeholder="Incolla qui il post LinkedIn."></textarea>
+  <div class="attach" id="attach">
+    <button class="add" id="add" type="button">＋ Foto</button>
+    <input type="file" id="file" accept="image/*" multiple hidden>
+  </div>
+  <button class="go" id="go" disabled>Misura.</button>
+  <div class="load" id="load">Sto leggendo…</div>
+  <div class="err" id="err"></div>
+
+  <section class="result" id="result">
+    <div class="big">
+      <div class="num" id="num">0%</div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="meter">
+      <div class="fill" id="fill"></div>
+      <div class="lbl">Cringe.</div>
+      <div class="val" id="verdict">—</div>
+    </div>
+    <button class="q" id="q" type="button"><i>?</i><span id="qtxt">Leggi la spiegazione</span></button>
+    <div class="why" id="why"></div>
+  </section>
+
+  <footer>Stima basata sui pattern ricorrenti di r/LinkedInCringeIT.</footer>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const post = $("post"), go = $("go");
+let samplePromise = (window.claude && claude.use) ? claude.use("sample").catch(()=>null) : Promise.resolve(null);
+
+const face = $("face");
+let images = []; // {blob, url}
+const ready = () => post.value.trim().length >= 20 || images.length > 0;
+const refresh = () => { go.disabled = !ready(); };
+function setMood(m){ face.dataset.mood = m; face.classList.remove("pop"); void face.offsetWidth; if(m!=="neutral") face.classList.add("pop"); }
+post.addEventListener("input", () => { refresh(); if (face.dataset.mood !== "neutral") setMood("neutral"); });
+
+/* occhi che seguono il puntatore */
+(function(){
+  const pps = [...face.querySelectorAll(".pp")];
+  let tx = -0.5, ty = -0.75, x = tx, y = ty; // a riposo guarda in alto a sinistra
+  addEventListener("pointermove", e => {
+    const r = face.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width/2), dy = e.clientY - (r.top + r.height/2);
+    const d = Math.hypot(dx, dy) || 1, m = Math.min(1, d/220);
+    tx = dx/d*m; ty = dy/d*m;
+  }, {passive:true});
+  document.addEventListener("pointerleave", () => { tx = -0.5; ty = -0.75; });
+  (function loop(){
+    x += (tx-x)*.18; y += (ty-y)*.18;
+    for (const g of pps){ const k = +g.dataset.k; g.setAttribute("transform", `translate(${(x*k).toFixed(2)} ${(y*k).toFixed(2)})`); }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+$("add").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", async e => {
+  for (const f of [...e.target.files].slice(0, 4 - images.length)) {
+    const blob = await shrink(f); images.push({blob, url: URL.createObjectURL(blob)});
+  }
+  e.target.value = ""; drawThumbs(); refresh();
+});
+function drawThumbs(){
+  $("attach").querySelectorAll(".thumb").forEach(n=>n.remove());
+  images.forEach((im,i)=>{
+    const d = document.createElement("div"); d.className = "thumb";
+    d.innerHTML = `<img src="${im.url}" alt=""><button type="button" aria-label="Rimuovi">✕</button>`;
+    d.querySelector("button").onclick = () => { URL.revokeObjectURL(im.url); images.splice(i,1); drawThumbs(); refresh(); };
+    $("attach").insertBefore(d, $("add"));
+  });
+  $("add").style.display = images.length >= 4 ? "none" : "";
+}
+async function shrink(file){
+  try{
+    const bmp = await createImageBitmap(file); const k = Math.min(1, 1280/Math.max(bmp.width,bmp.height));
+    const c = document.createElement("canvas"); c.width = Math.round(bmp.width*k); c.height = Math.round(bmp.height*k);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return await new Promise(r=>c.toBlob(b=>r(b||file),"image/jpeg",.85));
+  }catch(e){ return file; }
+}
+$("q").addEventListener("click", () => { const on = $("why").classList.toggle("on"); $("q").classList.toggle("on", on); $("qtxt").textContent = on ? "Nascondi la spiegazione" : "Leggi la spiegazione"; });
+go.addEventListener("click", run);
+
+const PROMPT = `Sei il "Cringiometro": stimi quanto un post LinkedIn verrebbe percepito come cringe dalla community di r/LinkedInCringeIT (il subreddit italiano che raccoglie i post LinkedIn più imbarazzanti).
+
+Pattern che quel sub prende di mira più spesso:
+- storielle motivazionali palesemente inventate (il tassista saggio, il figlio di 5 anni che insegna leadership, il candidato assunto perché ha ringraziato la signora delle pulizie)
+- lezioni di business tratte da eventi privati (matrimonio, lutto, parto, malattia, vacanze)
+- humblebrag e "sono felice e orgoglioso di annunciare" gonfiato
+- broetry: una frase per riga per creare suspense finta
+- hustle culture, sveglia alle 5, glorificazione del lavoro gratis/stage non pagati, "chi si lamenta non ha fame"
+- engagement bait ("Agree?", "Cosa ne pensate? 👇", "Commenta SI")
+- emoji a raffica 🚀🔥💪, hashtag spam, inglesismi gratuiti ("mindset", "game changer")
+- testo palesemente generato da AI, tono da guru, frasi fatte
+- selfie emotivi / vulnerabilità usata come vetrina, recruiter o CEO paternalisti
+
+Se sono allegate immagini, fanno parte del post: valutale insieme al testo (selfie emotivi, foto col badge o sul palco, screenshot di complimenti ricevuti, foto da ospedale/matrimonio usate per parlare di lavoro, grafiche AI, citazioni motivazionali su sfondo stock) e citale nelle reasons quando pesano.
+
+Un post sobrio, informativo, specifico e onesto deve avere un punteggio basso. Non essere gentile né cattivo per partito preso: sii calibrato.
+
+Rispondi SOLO con JSON valido, in italiano, con questa forma:
+{"score": intero 0-100, "verdict": "2-3 parole secche (es. 'Puro cringe', 'Quasi umano', 'Pulito')", "tags": ["max 3 etichette brevi dei pattern trovati"], "reasons": [{"title": "pattern in 2-4 parole", "detail": "una frase concreta che cita o indica il punto del post"}]}
+Al massimo 4 reasons. Se il post è pulito, spiega in 1-2 reasons perché funziona.
+
+POST:
+"""
+`;
+
+async function run(){
+  const text = post.value.trim();
+  if (!ready()) return;
+  go.disabled = true; $("err").textContent = ""; $("load").classList.add("on");
+  setMood("neutral"); face.classList.add("thinking");
+  $("result").classList.remove("on"); $("why").classList.remove("on"); $("q").classList.remove("on"); $("qtxt").textContent = "Leggi la spiegazione";
+  let out = null;
+  try {
+    const sample = await samplePromise;
+    if (sample) {
+      let v, opts = {modelTier:"default"};
+      if (images.length) {
+        let ok = false; try { ok = !!(await sample.limits()).images; } catch(e){}
+        if (ok) opts.images = images.map(i=>i.blob);
+      }
+      const nImg = opts.images ? `\n"""\n(Al post sono allegate ${opts.images.length} immagini.)` : '\n"""';
+      const input = PROMPT + (text || "(nessun testo, solo immagini)") + nImg;
+      try { v = await sample.json(input, opts); }
+      catch(e){
+        if (e && e.code === "not_granted") throw e;
+        const r = await sample(input, opts);
+        v = JSON.parse((r.text.match(/\{[\s\S]*\}/)||["{}"])[0]);
+      }
+      if (v && typeof v.score === "number") out = v;
+    }
+  } catch(e){ /* fallback below */ }
+  if (!out) { try { out = await viaApi(text); } catch(e){} }
+  if (!out) out = heuristic(text);
+  face.classList.remove("thinking");
+  render(out, text);
+  const s = out.score;
+  setTimeout(() => setMood(s < 15 ? "low" : s < 40 ? "mid" : "high"), 700);
+  $("load").classList.remove("on"); go.disabled = false;
+}
+
+async function viaApi(text){
+  const imgs = await Promise.all(images.map(i => new Promise(r => { const f = new FileReader(); f.onload = () => r({media_type: i.blob.type || "image/jpeg", data: String(f.result).split(",")[1]}); f.readAsDataURL(i.blob); })));
+  const r = await fetch("/api/score", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({post: text, images: imgs})});
+  if (!r.ok) throw new Error("api " + r.status);
+  const v = await r.json();
+  if (typeof v.score !== "number") throw new Error("bad");
+  return v;
+}
+
+function render(o, text){
+  const s = Math.max(0, Math.min(100, Math.round(o.score)));
+  $("result").classList.add("on");
+  $("verdict").textContent = o.verdict || verdictFor(s);
+  $("chips").innerHTML = (o.tags||[]).slice(0,3).map(t=>`<span class="chip">${esc(t)}</span>`).join("");
+  $("why").innerHTML = (o.reasons||[]).slice(0,4).map(r=>`<div class="reason"><b>${esc(r.title)}.</b><p>${esc(r.detail)}</p></div>`).join("");
+  $("fill").style.width = "0";
+  requestAnimationFrame(()=>requestAnimationFrame(()=> $("fill").style.width = s + "%"));
+  let n = 0; const t0 = performance.now();
+  (function tick(t){ const p = Math.min(1,(t-t0)/900); n = Math.round(s*(1-Math.pow(1-p,3))); $("num").textContent = n+"%"; if(p<1) requestAnimationFrame(tick); })(t0);
+  $("result").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function verdictFor(s){ return s>=80?"Puro cringe":s>=60?"Molto cringe":s>=40?"Al limite":s>=20?"Quasi umano":"Pulito"; }
+function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* Fallback offline: pattern pesati */
+function heuristic(t){
+  const low = t.toLowerCase(), lines = t.split(/\n/).filter(l=>l.trim());
+  const R = [];
+  const add = (cond, w, tag, title, detail) => { if (cond) R.push({w, tag, title, detail}); };
+  const emoji = (t.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu)||[]).length;
+  const tags = (t.match(/#\w+/g)||[]).length;
+  const shortLines = lines.filter(l=>l.trim().split(/\s+/).length<=8).length;
+  add(/(tassista|mio figlio|mia figlia|anni mi ha (detto|insegnato)|signora delle pulizie|un candidato|l'ho assunt)/.test(low), 28, "Storia inventata", "Aneddoto da manuale", "Ha la struttura classica dell'aneddoto-parabola che sul sub viene dato per inventato.");
+  add(/(felice e orgoglios|onorat[oa] di annunciare|thrilled|humbled)/.test(low), 16, "Humblebrag", "Annuncio gonfiato", "La formula “felice e orgoglioso di annunciare” è un classico del genere.");
+  add(/(matrimonio|funerale|lutto|parto|ospedale|chemio|luna di miele).{0,200}(leadership|business|lavoro|team|vendite|b2b)/s.test(low), 26, "Lezione dal privato", "Privato → business", "Un evento personale usato per tirare fuori una lezione di business.");
+  add(/(alle 5 del mattino|sveglia alle|weekend.{0,20}lavor|chi si lamenta|no excuses|hustle|grind)/.test(low), 18, "Hustle culture", "Glorificazione del sacrificio", "Celebra orari estremi o sacrificio come merito.");
+  add(/(agree\??|cosa ne pensate|commenta|scrivi .{0,10} nei commenti|👇)/.test(low), 12, "Engagement bait", "Caccia ai commenti", "Chiude chiedendo interazione invece di dire qualcosa.");
+  add(lines.length>=8 && shortLines/lines.length>0.7, 14, "Broetry", "Una frase per riga", "Il testo va a capo continuamente per creare suspense finta.");
+  add(emoji>=5, Math.min(14, emoji*2), "Emoji spam", "Troppe emoji", `${emoji} emoji: sul sub è un segnale immediato.`);
+  add(tags>=5, 8, "Hashtag spam", "Muro di hashtag", `${tags} hashtag in coda.`);
+  add(/(mindset|game.?changer|comfort zone|growth|resilienza|networking|vision)/.test(low), 8, "Frasi fatte", "Lessico da guru", "Gergo motivazionale generico al posto di contenuto concreto.");
+  add(/(non sono qui per piacere|scomodo|impopolare|unpopular opinion|nessuno te lo dice)/.test(low), 10, "Finto controcorrente", "Opinione “scomoda”", "Si presenta come scomodo ma dice una cosa ovvia.");
+  let s = Math.min(97, 6 + R.reduce((a,r)=>a+r.w,0));
+  if (!R.length) R.push({tag:"Sobrio", title:"Niente pattern tipici", detail:"Non usa le formule che il sub prende di mira: tono diretto, niente esca per commenti."});
+  R.sort((a,b)=>(b.w||0)-(a.w||0));
+  return { score:s, verdict:verdictFor(s), tags:R.slice(0,3).map(r=>r.tag), reasons:R.slice(0,4).map(({title,detail})=>({title,detail})) };
+}
+</script>
+</body>
+</html>
